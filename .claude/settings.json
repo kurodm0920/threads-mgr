@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:developers.facebook.com)",
+      "Bash(pnpm --version)",
+      "Bash(vercel --version)",
+      "Bash(supabase --version)",
+      "Bash(vercel whoami *)",
+      "Bash(supabase projects *)",
+      "Bash(brew install *)",
+      "Bash(pnpm create *)",
+      "Bash(rsync -a threads-mgr/ ./)",
+      "Bash(supabase init *)",
+      "Bash(supabase migration *)",
+      "Read(//Users/nagasawayuuya/.supabase/**)",
+      "Bash(pnpm add *)",
+      "Bash(openssl rand *)",
+      "Bash(echo \"TOKEN_ENC_KEY=$\\(openssl rand -hex 32\\)\")",
+      "Bash(echo \"SESSION_SECRET=$\\(openssl rand -hex 32\\)\")",
+      "Bash(echo \"CC_API_KEY=$\\(openssl rand -hex 32\\)\")",
+      "Bash(echo \"CRON_SECRET=$\\(openssl rand -hex 32\\)\")",
+      "Bash(psql --version)"
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/server';
 import { publishThread, type AccountWithToken } from '@/lib/threads/api';
+import { extractRuleFeatures } from '@/lib/feature-extract';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -120,6 +121,22 @@ export async function GET(req: Request) {
         cta_target_url: post.cta_target_url,
         scheduled_at: post.scheduled_at,
         published_at: new Date().toISOString(),
+      });
+
+      // ルールベース特徴抽出（投稿時自動）
+      const features = extractRuleFeatures(post.body, post.has_cta);
+      await supabase.from('post_features').upsert({
+        post_id: post.id,
+        body_length: features.body_length,
+        emoji_count: features.emoji_count,
+        hashtag_count: features.hashtag_count,
+        newline_count: features.newline_count,
+        question_count: features.question_count,
+        has_cta: features.has_cta,
+        has_url: features.has_url,
+        cta_position: features.cta_position,
+        decided_by: 'rule',
+        updated_at: new Date().toISOString(),
       });
 
       await supabase

@@ -8,6 +8,8 @@ on:
     - cron: '5 * * * *'
     # 毎日 UTC 20:00 (JST 5:00): バズ投稿自動収集
     - cron: '0 20 * * *'
+    # 毎日 UTC 15:05 (JST 0:05): 日次集計
+    - cron: '5 15 * * *'
   workflow_dispatch:
     inputs:
       target:
@@ -19,6 +21,7 @@ on:
           - publish
           - metrics
           - inspirations
+          - daily-stats
           - all
 
 concurrency:
@@ -69,4 +72,19 @@ jobs:
           curl -fsSL --max-time 90 -X GET \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "${{ secrets.VERCEL_URL }}/cron/inspirations-fetch"
+          echo ""
+
+  daily-stats:
+    if: |
+      github.event.schedule == '5 15 * * *' ||
+      (github.event_name == 'workflow_dispatch' &&
+        (github.event.inputs.target == 'daily-stats' || github.event.inputs.target == 'all'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Trigger /cron/daily-stats
+        run: |
+          curl -fsSL --max-time 90 -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.VERCEL_URL }}/cron/daily-stats"
           echo ""

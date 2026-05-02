@@ -131,12 +131,23 @@ function TreeCard({ rows }: { rows: Inspiration[] }) {
       <div className="space-y-2 pl-3 border-l-2 border-blue-200 dark:border-blue-900">
         {rows.map((r) => (
           <div key={r.id} className="space-y-1">
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2 text-xs flex-wrap">
               <span className="text-zinc-500">#{r.tree_position}</span>
               <StatusBadge status={r.scrape_status} />
               {r.account_handle && (
-                <span className="font-mono text-zinc-500">
+                <a
+                  href={r.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-blue-500 hover:underline"
+                >
                   @{r.account_handle}
+                </a>
+              )}
+              {r.likes_count !== null && (
+                <span className="text-zinc-500">
+                  ❤️ {r.likes_count} 💬 {r.replies_count ?? 0} 🔄{' '}
+                  {r.reposts_count ?? 0}
                 </span>
               )}
             </div>

@@ -54,8 +54,27 @@ async function scrape(page, url) {
       return Math.round(num);
     }
 
-    // 本文候補（複数の構造を試す）
-    const article = document.querySelector('main article, [data-pressable-container]');
+    // URL から post_id 抽出（連投投稿で正しい article を選ぶため）
+    const urlPostMatch = window.location.pathname.match(/\/post\/([^/?]+)/);
+    const targetPostId = urlPostMatch ? urlPostMatch[1] : null;
+
+    // 対象 post_id を含む article を優先的に選ぶ
+    const allArticles = document.querySelectorAll(
+      'main article, [data-pressable-container]'
+    );
+    let article = null;
+    if (targetPostId) {
+      for (const a of allArticles) {
+        const link = a.querySelector(`a[href*="/post/${targetPostId}"]`);
+        if (link) {
+          article = a;
+          break;
+        }
+      }
+    }
+    // フォールバック: 最初の article
+    if (!article) article = allArticles[0] ?? null;
+
     let body = null;
     if (article) {
       // 本文はだいたい最初の長いテキストブロック

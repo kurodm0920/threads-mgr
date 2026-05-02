@@ -98,9 +98,7 @@ async function scrape(page, url) {
 
     // 戦略2: article 内の数字付き短い span を DOM順に取得（engagement bar）
     // Threads UI は左から ❤️ → 💬 → 🔄 → ↗️ の順
-    const article =
-      document.querySelector('main article') ||
-      document.querySelector('[data-pressable-container]');
+    // ※ 上で宣言した article を再利用
     const numericSeq = [];
     const debugSpans = [];
     if (article) {

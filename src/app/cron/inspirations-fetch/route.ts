@@ -6,16 +6,16 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const KEYWORDS = [
-  '今日の運勢',
-  '水星逆行',
-  '四柱推命',
-  '紫微斗数',
-  '易経',
-  '占星術',
+  '占い',
+  '運勢',
+  '星座',
+  '開運',
+  'スピリチュアル',
   'ホロスコープ',
   'タロット',
-  '金運',
-  '恋愛運',
+  '牡牛座',
+  '数秘術',
+  '宿命',
 ];
 
 const RESULTS_PER_KEYWORD = 20;
@@ -45,7 +45,7 @@ export async function GET(req: Request) {
 
   const { data: account } = await supabase
     .from('accounts')
-    .select('access_token_enc, access_token_iv')
+    .select('threads_username, access_token_enc, access_token_iv')
     .eq('is_active', true)
     .maybeSingle();
 
@@ -53,6 +53,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'no_active_account' }, { status: 400 });
   }
 
+  const ownUsername = account.threads_username;
   const accessToken = decryptToken(
     account.access_token_enc,
     account.access_token_iv
@@ -64,7 +65,7 @@ export async function GET(req: Request) {
     try {
       const url = new URL(`${THREADS_GRAPH_BASE}/v1.0/keyword_search`);
       url.searchParams.set('q', keyword);
-      url.searchParams.set('search_type', 'TOP');
+      url.searchParams.set('search_type', 'RECENT');
       url.searchParams.set('fields', 'id,text,permalink,username,timestamp');
       url.searchParams.set('access_token', accessToken);
 
@@ -79,7 +80,11 @@ export async function GET(req: Request) {
       }
 
       const data = (await res.json()) as { data?: SearchResult[] };
-      const posts = (data.data ?? []).slice(0, RESULTS_PER_KEYWORD);
+      const allPosts = data.data ?? [];
+      // 自分の投稿は除外
+      const posts = allPosts
+        .filter((p) => p.username !== ownUsername)
+        .slice(0, RESULTS_PER_KEYWORD);
 
       if (posts.length === 0) {
         results[keyword] = { fetched: 0, new: 0 };

@@ -1,0 +1,39 @@
+name: Scrape Inspirations
+
+on:
+  schedule:
+    # 5分ごと
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: scrape-inspirations
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-v2
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@latest
+          npx playwright install chromium --with-deps
+
+      - name: Scrape pending Threads URLs
+        run: node .github/scripts/scrape-threads.mjs
+        env:
+          VERCEL_URL: ${{ secrets.VERCEL_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

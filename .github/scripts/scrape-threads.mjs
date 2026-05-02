@@ -96,29 +96,33 @@ async function scrape(page, url) {
       else if (reposts_count === null && /(再投稿|repost|share|シェア)/i.test(lbl)) reposts_count = num;
     }
 
-    // 戦略2: SVG アイコンの近くの数字（ハート/吹き出し/リポストアイコン）
-    if (likes_count === null || replies_count === null || reposts_count === null) {
-      const buttons = document.querySelectorAll('[role="button"], [role="link"], button, a');
-      for (const btn of buttons) {
-        const text = (btn.textContent ?? '').trim();
-        if (!text || text.length > 20) continue;
-        const numMatch = text.match(/^[\d,.]+[万千KMk]?$/);
-        if (!numMatch) continue;
-        const num = parseCount(text);
-        if (num === null) continue;
-
-        const ariaLabel = btn.getAttribute('aria-label') ?? '';
-        const html = btn.innerHTML ?? '';
-        // SVG の近くで判定
-        if (likes_count === null && /(いいね|like|heart)/i.test(ariaLabel + html)) {
-          likes_count = num;
-        } else if (replies_count === null && /(返信|reply|comment)/i.test(ariaLabel + html)) {
-          replies_count = num;
-        } else if (reposts_count === null && /(再投稿|repost)/i.test(ariaLabel + html)) {
-          reposts_count = num;
+    // 戦略2: article 内の数字付き短い span を DOM順に取得（engagement bar）
+    // Threads UI は左から ❤️ → 💬 → 🔄 → ↗️ の順
+    const article =
+      document.querySelector('main article') ||
+      document.querySelector('[data-pressable-container]');
+    const numericSeq = [];
+    const debugSpans = [];
+    if (article) {
+      article.querySelectorAll('span').forEach((s) => {
+        const t = (s.textContent ?? '').trim();
+        if (t.length > 0 && t.length < 10 && /^[\d,]+(\.\d+)?[万千KMk]?$/.test(t)) {
+          numericSeq.push(t);
         }
-      }
+        if (t.length > 0 && t.length < 30 && /\d/.test(t)) {
+          debugSpans.push(t);
+        }
+      });
     }
+    // 重複除去（連続した同値はスキップ）
+    const dedup = [];
+    for (const t of numericSeq) {
+      if (dedup[dedup.length - 1] !== t) dedup.push(t);
+    }
+
+    if (likes_count === null && dedup[0]) likes_count = parseCount(dedup[0]);
+    if (replies_count === null && dedup[1]) replies_count = parseCount(dedup[1]);
+    if (reposts_count === null && dedup[2]) reposts_count = parseCount(dedup[2]);
 
     // 投稿時刻
     const timeEl = document.querySelector('time');
@@ -132,6 +136,7 @@ async function scrape(page, url) {
       reposts_count,
       published_at,
       _debug_labels: debugLabels.slice(0, 15),
+      _debug_spans: debugSpans.slice(0, 20),
     };
   });
 
@@ -171,12 +176,13 @@ async function main() {
       console.log(
         `     metrics: likes=${data.likes_count} replies=${data.replies_count} reposts=${data.reposts_count}`
       );
-      if (data._debug_labels?.length) {
-        console.log(`     debug aria-labels: ${data._debug_labels.slice(0, 8).join(' | ')}`);
+      if (data._debug_spans?.length) {
+        console.log(`     debug spans: ${data._debug_spans.slice(0, 12).join(' | ')}`);
       }
-      // _debug_labels は DB に送らない
-      const { _debug_labels: _, ...payload } = data;
-      void _;
+      // debug フィールドは DB に送らない
+      const { _debug_labels: _l, _debug_spans: _s, ...payload } = data;
+      void _l;
+      void _s;
       await patchResult(item.id, { success: true, ...payload });
       succeeded++;
     } catch (e) {

@@ -74,18 +74,49 @@ async function scrape(page, url) {
     const pathMatch = window.location.pathname.match(/^\/@([^/]+)\//);
     const account_handle = pathMatch ? pathMatch[1] : null;
 
-    // metrics: aria-label や buttons から
+    // === metrics 抽出 ===
     let likes_count = null, replies_count = null, reposts_count = null;
-    const buttons = document.querySelectorAll('[role="button"], [role="link"]');
-    for (const btn of buttons) {
-      const label = (btn.getAttribute('aria-label') ?? '').toLowerCase();
-      const text = btn.innerText ?? '';
-      if (/like|いいね/i.test(label) && likes_count === null) {
-        likes_count = parseCount(text) ?? parseCount(label);
-      } else if (/repl|reply|返信|コメント/i.test(label) && replies_count === null) {
-        replies_count = parseCount(text) ?? parseCount(label);
-      } else if (/repost|再投稿|リポスト/i.test(label) && reposts_count === null) {
-        reposts_count = parseCount(text) ?? parseCount(label);
+
+    // 戦略1: aria-label に "N件のいいね" "N likes" 等のパターン
+    const allLabeled = document.querySelectorAll('[aria-label]');
+    const debugLabels = [];
+    for (const el of allLabeled) {
+      const lbl = el.getAttribute('aria-label') ?? '';
+      if (lbl.length > 200) continue;
+      if (!/\d/.test(lbl)) continue;
+      debugLabels.push(lbl);
+
+      const numMatch = lbl.match(/[\d,]+/);
+      if (!numMatch) continue;
+      const num = parseInt(numMatch[0].replace(/,/g, ''), 10);
+      if (isNaN(num)) continue;
+
+      if (likes_count === null && /(いいね|like)/i.test(lbl)) likes_count = num;
+      else if (replies_count === null && /(返信|reply|repl|コメント|comment)/i.test(lbl)) replies_count = num;
+      else if (reposts_count === null && /(再投稿|repost|share|シェア)/i.test(lbl)) reposts_count = num;
+    }
+
+    // 戦略2: SVG アイコンの近くの数字（ハート/吹き出し/リポストアイコン）
+    if (likes_count === null || replies_count === null || reposts_count === null) {
+      const buttons = document.querySelectorAll('[role="button"], [role="link"], button, a');
+      for (const btn of buttons) {
+        const text = (btn.textContent ?? '').trim();
+        if (!text || text.length > 20) continue;
+        const numMatch = text.match(/^[\d,.]+[万千KMk]?$/);
+        if (!numMatch) continue;
+        const num = parseCount(text);
+        if (num === null) continue;
+
+        const ariaLabel = btn.getAttribute('aria-label') ?? '';
+        const html = btn.innerHTML ?? '';
+        // SVG の近くで判定
+        if (likes_count === null && /(いいね|like|heart)/i.test(ariaLabel + html)) {
+          likes_count = num;
+        } else if (replies_count === null && /(返信|reply|comment)/i.test(ariaLabel + html)) {
+          replies_count = num;
+        } else if (reposts_count === null && /(再投稿|repost)/i.test(ariaLabel + html)) {
+          reposts_count = num;
+        }
       }
     }
 
@@ -93,7 +124,15 @@ async function scrape(page, url) {
     const timeEl = document.querySelector('time');
     const published_at = timeEl?.getAttribute('datetime') ?? null;
 
-    return { body, account_handle, likes_count, replies_count, reposts_count, published_at };
+    return {
+      body,
+      account_handle,
+      likes_count,
+      replies_count,
+      reposts_count,
+      published_at,
+      _debug_labels: debugLabels.slice(0, 15),
+    };
   });
 
   if (!data.body || data.body.length < 5) {
@@ -128,8 +167,17 @@ async function main() {
     try {
       console.log(`→ ${item.source_url}`);
       const data = await scrape(page, item.source_url);
-      await patchResult(item.id, { success: true, ...data });
-      console.log(`  ✅ ${(data.body ?? '').slice(0, 60)}...`);
+      console.log(`  ✅ body: ${(data.body ?? '').slice(0, 60)}...`);
+      console.log(
+        `     metrics: likes=${data.likes_count} replies=${data.replies_count} reposts=${data.reposts_count}`
+      );
+      if (data._debug_labels?.length) {
+        console.log(`     debug aria-labels: ${data._debug_labels.slice(0, 8).join(' | ')}`);
+      }
+      // _debug_labels は DB に送らない
+      const { _debug_labels: _, ...payload } = data;
+      void _;
+      await patchResult(item.id, { success: true, ...payload });
       succeeded++;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

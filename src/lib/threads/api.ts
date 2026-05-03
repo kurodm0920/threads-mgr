@@ -96,7 +96,8 @@ export async function getPostInsights(
   const accessToken = getAccessToken(account);
 
   const url = new URL(`${THREADS_GRAPH_BASE}/v1.0/${mediaId}/insights`);
-  url.searchParams.set('metric', 'views,likes,replies,reposts,quotes,clicks');
+  // 'clicks' は現状の Threads Insights API でサポートされておらず 500 を返すため除外
+  url.searchParams.set('metric', 'views,likes,replies,reposts,quotes');
   url.searchParams.set('access_token', accessToken);
 
   const res = await fetch(url);

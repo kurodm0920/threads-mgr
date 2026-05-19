@@ -49,21 +49,7 @@ export async function POST(req: Request) {
   const supabase = getServiceClient();
   const now = new Date().toISOString();
 
-  // 既存の source_url を一括取得して重複を事前に弾く
-  const urls = valid.map((r) => r.url);
-  const { data: existing } = await supabase
-    .from('inspirations')
-    .select('source_url')
-    .in('source_url', urls);
-
-  const existingSet = new Set((existing ?? []).map((e) => e.source_url));
-  const toInsert = valid.filter((r) => !existingSet.has(r.url));
-
-  if (toInsert.length === 0) {
-    return NextResponse.json({ inserted: 0, skipped: valid.length });
-  }
-
-  const payload = toInsert.map((r) => ({
+  const payload = valid.map((r) => ({
     source: 'keyword_trend' as const,
     source_url: r.url,
     threads_post_id: r.threads_post_id,
@@ -76,9 +62,10 @@ export async function POST(req: Request) {
     scrape_attempts: 0,
   }));
 
+  // UNIQUE インデックス (source_url) と原子的に衝突回避
   const { data: inserted, error } = await supabase
     .from('inspirations')
-    .insert(payload)
+    .upsert(payload, { onConflict: 'source_url', ignoreDuplicates: true })
     .select('id');
 
   if (error) {

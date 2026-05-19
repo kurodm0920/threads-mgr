@@ -39,7 +39,7 @@ export default async function InspirationsPage({
   if (tab === 'manual') {
     query = query.eq('source', 'manual');
   } else if (tab === 'trend') {
-    query = query.in('source', ['keyword_trend', 'auto_search']);
+    query = query.eq('source', 'keyword_trend');
   }
 
   const { data: rows } = await query;
@@ -52,7 +52,7 @@ export default async function InspirationsPage({
     supabase
       .from('inspirations')
       .select('id', { count: 'exact', head: true })
-      .in('source', ['keyword_trend', 'auto_search']),
+      .eq('source', 'keyword_trend'),
     supabase.from('inspirations').select('id', { count: 'exact', head: true }),
   ]);
 

@@ -36,7 +36,8 @@ const TOP_N = 10;
 const OWN_HANDLES = ['shima_lovefortune'];
 
 function buildSearchUrl(keyword) {
-  return `https://www.threads.com/search?q=${encodeURIComponent(keyword)}&serp_type=default`;
+  const q = encodeURIComponent(keyword).replace(/%20/g, '+');
+  return `https://www.threads.com/search?q=${q}`;
 }
 
 async function extractPostUrls(page, keyword) {

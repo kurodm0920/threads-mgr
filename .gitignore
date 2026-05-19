@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 certificates
+
+# claude code (local permission overrides)
+.claude/settings.local.json

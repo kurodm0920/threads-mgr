@@ -1,4 +1,11 @@
 import { chromium } from 'playwright';
+import {
+  createStealthContext,
+  gateInterval,
+  gotoWithBackoff,
+  humanScroll,
+  jitter,
+} from './lib/stealth.mjs';
 
 const VERCEL_URL = process.env.VERCEL_URL;
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -9,7 +16,6 @@ if (!VERCEL_URL || !CRON_SECRET) {
 }
 
 const NAV_TIMEOUT = 30000;
-const SETTLE_MS = 2500;
 
 async function getPending() {
   const res = await fetch(`${VERCEL_URL}/api/inspirations/pending`, {
@@ -37,8 +43,11 @@ async function patchResult(id, payload) {
 }
 
 async function scrape(page, url) {
-  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT });
-  await page.waitForTimeout(SETTLE_MS);
+  await gateInterval(4000);
+  await gotoWithBackoff(page, url, 3, NAV_TIMEOUT);
+  await jitter(1800, 3200);
+  await humanScroll(page, 400, 5);
+  await jitter(500, 1200);
 
   const data = await page.evaluate(() => {
     function parseCount(text) {
@@ -173,13 +182,7 @@ async function main() {
   }
 
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    userAgent:
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-    locale: 'ja-JP',
-    timezoneId: 'Asia/Tokyo',
-    viewport: { width: 1280, height: 800 },
-  });
+  const context = await createStealthContext(browser);
 
   let succeeded = 0;
   let failed = 0;

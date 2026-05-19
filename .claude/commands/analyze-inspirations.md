@@ -17,11 +17,16 @@ curl -k -s -H "Authorization: Bearer $CC_API_KEY" \
   > /tmp/cc-export.json
 ```
 
-`inspirations` 配列を中心に分析。
+`inspirations` 配列を中心に分析。`source` カラムで2系統に分けて扱う:
+
+- `source = 'manual'`: ゆやさん手動選定の質の高い参考（少数精鋭、目利き重視）
+- `source = 'keyword_trend'` or `'auto_search'`: Playwright で自動収集した業界トレンド（量重視、無関係投稿混入の可能性あり）
+
+トレンドデータは `keyword_matched`（どのキーワードでヒットしたか）と `search_rank`（検索順位）が付くので、これも分析に活用する。
 
 ### 2. 特徴抽出
 
-各 inspiration から:
+各 inspiration から（**source 系統ごとに別集計**）:
 - 文字数（中央値・分布）
 - 絵文字数（平均・最頻）
 - ハッシュタグ使用頻度
@@ -29,6 +34,11 @@ curl -k -s -H "Authorization: Bearer $CC_API_KEY" \
 - 文体（やさしい / 凛とした / エンタメ）
 - 末尾パターン（共感フレーズ / CTA / 問いかけ）
 - 頻出キーワード Top 20
+
+トレンド系のみ追加で:
+- `keyword_matched` 別の出現傾向（どのキーワードが活発か）
+- `search_rank` と `likes_count` の相関（上位ほど伸びてるか）
+- 占いと無関係そうな投稿は除外
 
 ### 3. ナレッジサマリー生成
 

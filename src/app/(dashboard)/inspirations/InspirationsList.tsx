@@ -17,6 +17,9 @@ interface Inspiration {
   replies_count: number | null;
   reposts_count: number | null;
   published_at: string | null;
+  keyword_matched: string | null;
+  search_rank: number | null;
+  discovered_at: string | null;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -46,7 +49,13 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export function InspirationsList({ rows }: { rows: Inspiration[] }) {
+export function InspirationsList({
+  rows,
+  showTrendMeta = false,
+}: {
+  rows: Inspiration[];
+  showTrendMeta?: boolean;
+}) {
   // ツリーごとにグループ化
   const groups = new Map<string, Inspiration[]>();
   const singles: Inspiration[] = [];
@@ -91,18 +100,51 @@ export function InspirationsList({ rows }: { rows: Inspiration[] }) {
     <section className="space-y-3">
       {sections.map((s) => {
         if (s.type === 'tree') {
-          return <TreeCard key={`tree-${s.rows[0].tree_id}`} rows={s.rows} />;
+          return (
+            <TreeCard
+              key={`tree-${s.rows[0].tree_id}`}
+              rows={s.rows}
+              showTrendMeta={showTrendMeta}
+            />
+          );
         }
-        return <SingleCard key={s.row.id} row={s.row} />;
+        return (
+          <SingleCard
+            key={s.row.id}
+            row={s.row}
+            showTrendMeta={showTrendMeta}
+          />
+        );
       })}
     </section>
   );
 }
 
-function SingleCard({ row }: { row: Inspiration }) {
+function TrendMeta({ row }: { row: Inspiration }) {
+  if (!row.keyword_matched && row.search_rank == null) return null;
+  return (
+    <div className="flex items-center gap-2 text-xs text-zinc-500">
+      {row.keyword_matched && (
+        <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+          🔍 {row.keyword_matched}
+        </span>
+      )}
+      {row.search_rank != null && <span>#{row.search_rank}</span>}
+    </div>
+  );
+}
+
+function SingleCard({
+  row,
+  showTrendMeta,
+}: {
+  row: Inspiration;
+  showTrendMeta: boolean;
+}) {
   return (
     <article className="bg-white dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-800 p-4 space-y-2">
       <Header row={row} />
+      {showTrendMeta && <TrendMeta row={row} />}
       <Body row={row} />
       {row.my_notes && (
         <p className="text-xs text-zinc-500 italic">📝 {row.my_notes}</p>
@@ -112,7 +154,14 @@ function SingleCard({ row }: { row: Inspiration }) {
   );
 }
 
-function TreeCard({ rows }: { rows: Inspiration[] }) {
+function TreeCard({
+  rows,
+  showTrendMeta,
+}: {
+  rows: Inspiration[];
+  showTrendMeta: boolean;
+}) {
+  void showTrendMeta;
   return (
     <article className="bg-white dark:bg-zinc-900 rounded border-2 border-blue-300 dark:border-blue-800 p-4 space-y-3">
       <div className="flex items-center gap-2">

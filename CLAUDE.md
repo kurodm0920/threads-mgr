@@ -45,11 +45,15 @@
 
 ### 画像つき投稿の運用
 - バズ分析結果（2026-05-19）で「バズ投稿の60%は画像付き」と判明
-- `public/buzz-images/` に幸運系画像10枚を常備（月5枚 / 神社3枚 / 夜桜2枚）
+- `public/buzz-images/` に幸運系画像を常備（ChatGPT 生成、現在4枚）:
+  - `moon-ocean.png` — 海上の満月
+  - `shrine-morning-light.png` — 朝光が差す神社
+  - `golden-buddha.png` — 金の仏像
+  - `dragon-cloud.png` — 龍雲
 - `/generate-week` で週35投稿のうち **5〜7投稿は画像つき** で生成（ランダム選択）
 - 画像URL形式: `https://threads-mgr.vercel.app/buzz-images/<filename>`
 - 投稿時刻が来ると `/cron/publish` が Threads API の IMAGE タイプで自動配信
-- 画像追加したい場合: `public/buzz-images/` に jpg を置いて `src/lib/buzz-images.ts` の `BUZZ_IMAGES` 配列に追記
+- 画像追加したい場合: `public/buzz-images/` に jpg/png を置いて `src/lib/buzz-images.ts` の `BUZZ_IMAGES` 配列に追記
 
 ## ハイブリッド運用フロー
 

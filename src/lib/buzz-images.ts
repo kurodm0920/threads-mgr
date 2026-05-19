@@ -1,7 +1,7 @@
 // 投稿に添付できる画像プール
 // public/buzz-images/ に置いてあるファイルを Vercel が静的配信する
 
-export type BuzzImageTheme = 'moon' | 'shrine' | 'cherry';
+export type BuzzImageTheme = 'moon' | 'shrine' | 'sacred' | 'sky';
 
 export interface BuzzImage {
   filename: string;
@@ -9,16 +9,10 @@ export interface BuzzImage {
 }
 
 export const BUZZ_IMAGES: BuzzImage[] = [
-  { filename: 'moon-01.jpg', theme: 'moon' },
-  { filename: 'moon-02.jpg', theme: 'moon' },
-  { filename: 'moon-03.jpg', theme: 'moon' },
-  { filename: 'moon-04.jpg', theme: 'moon' },
-  { filename: 'moon-05.jpg', theme: 'moon' },
-  { filename: 'shrine-01.jpg', theme: 'shrine' },
-  { filename: 'shrine-02.jpg', theme: 'shrine' },
-  { filename: 'shrine-03.jpg', theme: 'shrine' },
-  { filename: 'cherry-01.jpg', theme: 'cherry' },
-  { filename: 'cherry-02.jpg', theme: 'cherry' },
+  { filename: 'moon-ocean.png', theme: 'moon' },
+  { filename: 'shrine-morning-light.png', theme: 'shrine' },
+  { filename: 'golden-buddha.png', theme: 'sacred' },
+  { filename: 'dragon-cloud.png', theme: 'sky' },
 ];
 
 function getBaseUrl(): string {

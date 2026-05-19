@@ -18,6 +18,7 @@ const SuccessSchema = z.object({
   likes_count: z.number().int().nonnegative().optional().nullable(),
   replies_count: z.number().int().nonnegative().optional().nullable(),
   reposts_count: z.number().int().nonnegative().optional().nullable(),
+  views_count: z.number().int().nonnegative().optional().nullable(),
   published_at: z.string().datetime().optional().nullable(),
 });
 
@@ -61,6 +62,7 @@ export async function PATCH(
         likes_count: parsed.likes_count ?? null,
         replies_count: parsed.replies_count ?? null,
         reposts_count: parsed.reposts_count ?? null,
+        views_count: parsed.views_count ?? null,
         published_at: parsed.published_at ?? null,
         scrape_error: null,
       })

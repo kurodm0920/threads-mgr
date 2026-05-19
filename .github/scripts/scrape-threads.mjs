@@ -155,6 +155,20 @@ async function scrape(page, url) {
     if (replies_count === null && dedup[1]) replies_count = parseCount(dedup[1]);
     if (reposts_count === null && dedup[2]) reposts_count = parseCount(dedup[2]);
 
+    // views (閲覧数): span のテキストで "表示N回" or "N views" パターン
+    let views_count = null;
+    const allSpans = document.querySelectorAll('span');
+    for (const s of allSpans) {
+      const t = (s.textContent ?? '').trim();
+      if (!t || t.length > 40) continue;
+      const m = t.match(/^(?:表示|閲覧数?)\s*([\d,.]+[万千KMk]?)\s*(?:回|views?)?$/i)
+        ?? t.match(/^([\d,.]+[万千KMk]?)\s*(?:views?)$/i);
+      if (m) {
+        views_count = parseCount(m[1]);
+        break;
+      }
+    }
+
     // 投稿時刻
     const timeEl = document.querySelector('time');
     const published_at = timeEl?.getAttribute('datetime') ?? null;
@@ -165,6 +179,7 @@ async function scrape(page, url) {
       likes_count,
       replies_count,
       reposts_count,
+      views_count,
       published_at,
       _debug_labels: debugLabels.slice(0, 15),
       _debug_spans: debugSpans.slice(0, 20),
@@ -199,7 +214,7 @@ async function main() {
       const data = await scrape(page, item.source_url);
       console.log(`  ✅ body: ${(data.body ?? '').slice(0, 60)}...`);
       console.log(
-        `     metrics: likes=${data.likes_count} replies=${data.replies_count} reposts=${data.reposts_count}`
+        `     metrics: views=${data.views_count} likes=${data.likes_count} replies=${data.replies_count} reposts=${data.reposts_count}`
       );
       if (data._debug_spans?.length) {
         console.log(`     debug spans: ${data._debug_spans.slice(0, 12).join(' | ')}`);

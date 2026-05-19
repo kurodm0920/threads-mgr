@@ -16,10 +16,18 @@ interface Inspiration {
   likes_count: number | null;
   replies_count: number | null;
   reposts_count: number | null;
+  views_count: number | null;
   published_at: string | null;
   keyword_matched: string | null;
   search_rank: number | null;
   discovered_at: string | null;
+}
+
+function engagementRate(row: Inspiration): number | null {
+  if (!row.views_count || row.views_count === 0 || row.likes_count == null) {
+    return null;
+  }
+  return row.likes_count / row.views_count;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -199,6 +207,7 @@ function TreeCard({
                   {r.reposts_count ?? 0}
                 </span>
               )}
+              <MetricsExtra row={r} />
             </div>
             <Body row={r} />
             <Actions row={r} compact />
@@ -230,6 +239,7 @@ function Header({ row }: { row: Inspiration }) {
             {row.reposts_count ?? 0}
           </span>
         )}
+        <MetricsExtra row={row} />
       </div>
       <time className="text-xs text-zinc-500">
         {new Date(row.registered_at).toLocaleString('ja-JP', {
@@ -237,6 +247,38 @@ function Header({ row }: { row: Inspiration }) {
         })}
       </time>
     </div>
+  );
+}
+
+function MetricsExtra({ row }: { row: Inspiration }) {
+  if (row.scrape_status !== 'completed') return null;
+  const rate = engagementRate(row);
+  const isBuzz = rate != null && rate >= 0.05;
+  const isFresh =
+    row.published_at != null &&
+    Date.now() - new Date(row.published_at).getTime() < 30 * 24 * 60 * 60 * 1000;
+  return (
+    <>
+      {row.views_count != null && (
+        <span className="text-zinc-500">👁 {row.views_count.toLocaleString()}</span>
+      )}
+      {rate != null && (
+        <span
+          className={
+            isBuzz
+              ? 'px-1.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
+              : 'text-zinc-500'
+          }
+        >
+          🔥 {(rate * 100).toFixed(1)}%
+        </span>
+      )}
+      {isBuzz && isFresh && (
+        <span className="px-1.5 rounded bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300">
+          バズ
+        </span>
+      )}
+    </>
   );
 }
 

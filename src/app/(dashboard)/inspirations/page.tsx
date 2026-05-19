@@ -13,9 +13,27 @@ const TAB_LABEL: Record<Tab, string> = {
   all: '全件',
 };
 
+const BUZZ_RATE_THRESHOLD = 0.05;
+const BUZZ_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
 function parseTab(v: string | string[] | undefined): Tab {
   if (v === 'trend' || v === 'all') return v;
   return 'manual';
+}
+
+type Row = {
+  scrape_status: string;
+  published_at: string | null;
+  likes_count: number | null;
+  views_count: number | null;
+};
+
+function isBuzzWithinFreshness(r: Row): boolean {
+  if (r.scrape_status !== 'completed') return true; // 処理中は残す（状態確認のため）
+  if (!r.published_at || !r.views_count || !r.likes_count) return false;
+  const age = Date.now() - new Date(r.published_at).getTime();
+  if (age >= BUZZ_AGE_MS) return false;
+  return r.likes_count / r.views_count >= BUZZ_RATE_THRESHOLD;
 }
 
 export default async function InspirationsPage({
@@ -34,7 +52,7 @@ export default async function InspirationsPage({
       ascending: false,
       nullsFirst: false,
     })
-    .limit(200);
+    .limit(500);
 
   if (tab === 'manual') {
     query = query.eq('source', 'manual');
@@ -42,7 +60,11 @@ export default async function InspirationsPage({
     query = query.eq('source', 'keyword_trend');
   }
 
-  const { data: rows } = await query;
+  const { data: rawRows } = await query;
+  const allRows = rawRows ?? [];
+
+  // トレンドタブはサーバー側でバズ判定（30日以内 + engagement >= 5%）でフィルタ
+  const rows = tab === 'trend' ? allRows.filter(isBuzzWithinFreshness) : allRows;
 
   const counts = await Promise.all([
     supabase
@@ -103,8 +125,11 @@ export default async function InspirationsPage({
 
       {tab === 'trend' && (
         <p className="text-sm text-zinc-500">
-          占い系キーワードで Playwright が自動収集したトレンド投稿。Claude Code
-          で <code className="text-xs">/discover-trends</code>{' '}
+          占い系キーワードで Playwright が自動収集したトレンド投稿。
+          バズ判定条件:{' '}
+          <strong>投稿後30日以内 かつ エンゲージメント率（いいね/閲覧数）5%以上</strong>。
+          条件を満たさない投稿は「全件」タブで確認できます。
+          Claude Code で <code className="text-xs">/discover-trends</code>{' '}
           を起動すると新しいバッチを取得します。
         </p>
       )}

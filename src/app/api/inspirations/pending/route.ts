@@ -3,7 +3,7 @@ import { getServiceClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-const MAX_BATCH = 30;
+const MAX_BATCH = 50;
 
 function checkAuth(req: Request): boolean {
   const auth = req.headers.get('authorization');

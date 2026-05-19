@@ -254,55 +254,60 @@ async function scrape(page, url) {
 }
 
 async function main() {
-  const items = await getPending();
-  console.log(`Pending: ${items.length} items`);
-  if (items.length === 0) {
-    console.log('Nothing to scrape');
-    return;
-  }
-
   const browser = await chromium.launch({ headless: true });
   const context = await createStealthContext(browser);
 
-  let succeeded = 0;
-  let failed = 0;
+  let totalSucceeded = 0;
+  let totalFailed = 0;
+  let batchNum = 0;
+  const MAX_BATCHES = 20; // 暴走防止: 50件 × 20 = 最大1000件、workflow タイムアウト30分以内に収める
 
-  for (const item of items) {
-    const page = await context.newPage();
-    try {
-      console.log(`→ ${item.source_url}`);
-      const data = await scrape(page, item.source_url);
-      console.log(`  ✅ body: ${(data.body ?? '').slice(0, 60)}...`);
-      console.log(
-        `     metrics: views=${data.views_count} likes=${data.likes_count} replies=${data.replies_count} reposts=${data.reposts_count} tree_children=${data.tree_children?.length ?? 0}`
-      );
-      if (data._debug_spans?.length) {
-        console.log(`     debug spans: ${data._debug_spans.slice(0, 12).join(' | ')}`);
+  while (batchNum < MAX_BATCHES) {
+    const items = await getPending();
+    if (items.length === 0) {
+      console.log(`\nNo more pending items. Stopping after ${batchNum} batch(es).`);
+      break;
+    }
+    batchNum++;
+    console.log(`\n=== Batch ${batchNum}: ${items.length} items ===`);
+
+    for (const item of items) {
+      const page = await context.newPage();
+      try {
+        console.log(`→ ${item.source_url}`);
+        const data = await scrape(page, item.source_url);
+        console.log(`  ✅ body: ${(data.body ?? '').slice(0, 60)}...`);
+        console.log(
+          `     metrics: views=${data.views_count} likes=${data.likes_count} replies=${data.replies_count} reposts=${data.reposts_count} tree_children=${data.tree_children?.length ?? 0}`
+        );
+        if (data._debug_spans?.length) {
+          console.log(`     debug spans: ${data._debug_spans.slice(0, 12).join(' | ')}`);
+        }
+        // debug フィールドは DB に送らない
+        const { _debug_labels: _l, _debug_spans: _s, ...payload } = data;
+        void _l;
+        void _s;
+        await patchResult(item.id, { success: true, ...payload });
+        totalSucceeded++;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.log(`  ❌ ${msg}`);
+        await page
+          .screenshot({
+            path: join(SCREENSHOT_DIR, `scrape-FAILED-${item.id}.png`),
+            fullPage: false,
+          })
+          .catch(() => {});
+        await patchResult(item.id, { success: false, error: msg });
+        totalFailed++;
+      } finally {
+        await page.close();
       }
-      // debug フィールドは DB に送らない
-      const { _debug_labels: _l, _debug_spans: _s, ...payload } = data;
-      void _l;
-      void _s;
-      await patchResult(item.id, { success: true, ...payload });
-      succeeded++;
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.log(`  ❌ ${msg}`);
-      await page
-        .screenshot({
-          path: join(SCREENSHOT_DIR, `scrape-FAILED-${item.id}.png`),
-          fullPage: false,
-        })
-        .catch(() => {});
-      await patchResult(item.id, { success: false, error: msg });
-      failed++;
-    } finally {
-      await page.close();
     }
   }
 
   await browser.close();
-  console.log(`\nDone: ${succeeded} succeeded, ${failed} failed`);
+  console.log(`\nDone: ${totalSucceeded} succeeded, ${totalFailed} failed across ${batchNum} batch(es)`);
 }
 
 main().catch((e) => {

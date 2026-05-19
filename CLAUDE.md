@@ -43,6 +43,14 @@
 ### 禁止語（占術倫理＋プラットフォーム規約）
 - 「絶対」「100%」「必ず」「確実」など断定表現
 
+### 画像つき投稿の運用
+- バズ分析結果（2026-05-19）で「バズ投稿の60%は画像付き」と判明
+- `public/buzz-images/` に幸運系画像10枚を常備（月5枚 / 神社3枚 / 夜桜2枚）
+- `/generate-week` で週35投稿のうち **5〜7投稿は画像つき** で生成（ランダム選択）
+- 画像URL形式: `https://threads-mgr.vercel.app/buzz-images/<filename>`
+- 投稿時刻が来ると `/cron/publish` が Threads API の IMAGE タイプで自動配信
+- 画像追加したい場合: `public/buzz-images/` に jpg を置いて `src/lib/buzz-images.ts` の `BUZZ_IMAGES` 配列に追記
+
 ## ハイブリッド運用フロー
 
 ゆやさんが Claude Code を起動して AI 生成する設計（API課金回避）:

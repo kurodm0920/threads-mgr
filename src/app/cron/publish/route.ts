@@ -26,6 +26,7 @@ interface ScheduledPost {
   has_cta: boolean;
   cta_target_url: string | null;
   attempt_count: number;
+  media_urls: string[] | null;
 }
 
 export async function GET(req: Request) {
@@ -39,7 +40,7 @@ export async function GET(req: Request) {
   const { data: posts, error: fetchError } = await supabase
     .from('scheduled_posts')
     .select(
-      'id, account_id, scheduled_at, body, genre, content_type, has_cta, cta_target_url, attempt_count'
+      'id, account_id, scheduled_at, body, genre, content_type, has_cta, cta_target_url, attempt_count, media_urls'
     )
     .eq('status', 'queued')
     .lte('scheduled_at', now)
@@ -104,9 +105,13 @@ export async function GET(req: Request) {
     }
 
     try {
+      const firstImage = Array.isArray(post.media_urls)
+        ? post.media_urls.find((u): u is string => typeof u === 'string' && u.length > 0) ?? null
+        : null;
       const { mediaId, permalink } = await publishThread(
         account as AccountWithToken,
-        post.body
+        post.body,
+        { imageUrl: firstImage }
       );
 
       await supabase.from('published_posts').insert({

@@ -14,7 +14,8 @@ function getAccessToken(account: AccountWithToken): string {
 
 export async function publishThread(
   account: AccountWithToken,
-  body: string
+  body: string,
+  options?: { imageUrl?: string | null }
 ): Promise<{ mediaId: string; permalink: string | null }> {
   const accessToken = getAccessToken(account);
 
@@ -22,11 +23,17 @@ export async function publishThread(
   const createUrl = new URL(
     `${THREADS_GRAPH_BASE}/v1.0/${account.threads_user_id}/threads`
   );
-  const createBody = new URLSearchParams({
-    media_type: 'TEXT',
+  const params: Record<string, string> = {
     text: body,
     access_token: accessToken,
-  });
+  };
+  if (options?.imageUrl) {
+    params.media_type = 'IMAGE';
+    params.image_url = options.imageUrl;
+  } else {
+    params.media_type = 'TEXT';
+  }
+  const createBody = new URLSearchParams(params);
 
   const createRes = await fetch(createUrl, {
     method: 'POST',

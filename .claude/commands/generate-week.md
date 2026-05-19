@@ -64,6 +64,16 @@ curl -s -H "Authorization: Bearer $CC_API_KEY" \
 
 ### 5. 35投稿の配分
 
+**画像つき投稿**（必須）:
+- 35投稿中 **5〜7投稿** を画像つきにする（バズ分析で画像有率60%が判明）
+- 画像プールから **ランダム1枚** を選び、`media_urls: ["<URL>"]` として登録
+- 利用可能な画像（`public/buzz-images/`）:
+  - 月系: `moon-01.jpg` 〜 `moon-05.jpg`（満月・新月・幻想的な夜空）
+  - 神社系: `shrine-01.jpg` 〜 `shrine-03.jpg`（鳥居・参道）
+  - 夜桜系: `cherry-01.jpg`, `cherry-02.jpg`
+- URL 形式: `https://threads-mgr.vercel.app/buzz-images/<filename>`
+- テーマ整合: 満月・新月の投稿は moon、5月節句や開運系は shrine、夕方〜夜の共感系は cherry など、本文と緩く合うものを選ぶ（厳密じゃなくてOK）
+
 **ジャンル配分**（7日合計）:
 - 西洋占星術 50% → 17〜18投稿
 - 四柱推命 20% → 7投稿

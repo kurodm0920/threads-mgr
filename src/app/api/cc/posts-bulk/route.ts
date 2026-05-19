@@ -12,6 +12,7 @@ const PostInputSchema = z.object({
   content_type: z.enum(['empathy', 'tips', 'fortune', 'story', 'cta']).optional(),
   has_cta: z.boolean().optional(),
   cta_target_url: z.string().url().nullable().optional(),
+  media_urls: z.array(z.string().url()).optional().nullable(),
 });
 
 const BodySchema = z.object({
@@ -60,6 +61,7 @@ export async function POST(req: Request) {
     content_type: p.content_type ?? null,
     has_cta: p.has_cta ?? false,
     cta_target_url: p.cta_target_url ?? null,
+    media_urls: p.media_urls ?? null,
     status: 'queued',
     generated_by: 'claude_code',
     generation_batch_id: batchId,

@@ -173,7 +173,10 @@ async function scrape(page, url) {
     const timeEl = article?.querySelector('time') ?? document.querySelector('time');
     const published_at = timeEl?.getAttribute('datetime') ?? null;
 
-    // === ツリー検出: 同一ユーザーの隣接記事を子として収集 ===
+    // === ツリー検出: 同一ユーザーの「正規連投」のみ収集 ===
+    // コメント返信を除外するため、親の投稿時刻と30分以内の隣接記事のみ採用
+    const TREE_TIME_DIFF_MS = 30 * 60 * 1000;
+    const parentTime = published_at ? new Date(published_at).getTime() : null;
     const tree_children = [];
     if (account_handle && targetPostId) {
       for (const a of allArticles) {
@@ -202,6 +205,17 @@ async function scrape(page, url) {
         }
         if (!childPostId) continue;
 
+        // 子の投稿時刻
+        const childTimeEl = a.querySelector('time');
+        const childPublishedAt = childTimeEl?.getAttribute('datetime') ?? null;
+
+        // 時間差フィルタ: 親と30分以内に投稿されたもののみ採用
+        // 親の時刻が不明な場合はフォールバックで全採用
+        if (parentTime != null && childPublishedAt) {
+          const childTime = new Date(childPublishedAt).getTime();
+          if (Math.abs(childTime - parentTime) > TREE_TIME_DIFF_MS) continue;
+        }
+
         // 子の本文抽出
         let childBody = '';
         a.querySelectorAll('div[dir], span[dir]').forEach((el) => {
@@ -209,10 +223,6 @@ async function scrape(page, url) {
           if (t.length > childBody.length && t.length > 5) childBody = t;
         });
         if (!childBody) continue;
-
-        // 子の投稿時刻
-        const childTimeEl = a.querySelector('time');
-        const childPublishedAt = childTimeEl?.getAttribute('datetime') ?? null;
 
         tree_children.push({
           threads_post_id: childPostId,

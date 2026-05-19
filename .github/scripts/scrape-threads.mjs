@@ -170,8 +170,67 @@ async function scrape(page, url) {
     }
 
     // 投稿時刻
-    const timeEl = document.querySelector('time');
+    const timeEl = article?.querySelector('time') ?? document.querySelector('time');
     const published_at = timeEl?.getAttribute('datetime') ?? null;
+
+    // === ツリー検出: 同一ユーザーの隣接記事を子として収集 ===
+    const tree_children = [];
+    if (account_handle && targetPostId) {
+      for (const a of allArticles) {
+        if (a === article) continue;
+        // この article の主投稿者を判定: /@<handle>/ リンクが含まれる
+        const profileLinks = a.querySelectorAll('a[href^="/@"]');
+        let authorMatch = false;
+        for (const link of profileLinks) {
+          const m = link.getAttribute('href')?.match(/^\/@([^/]+)/);
+          if (m && m[1] === account_handle) {
+            authorMatch = true;
+            break;
+          }
+        }
+        if (!authorMatch) continue;
+
+        // post_id 抽出
+        const postLinks = a.querySelectorAll('a[href*="/post/"]');
+        let childPostId = null;
+        for (const pl of postLinks) {
+          const m = pl.getAttribute('href')?.match(/\/post\/([^/?#]+)/);
+          if (m && m[1] !== targetPostId) {
+            childPostId = m[1];
+            break;
+          }
+        }
+        if (!childPostId) continue;
+
+        // 子の本文抽出
+        let childBody = '';
+        a.querySelectorAll('div[dir], span[dir]').forEach((el) => {
+          const t = el.innerText?.trim() ?? '';
+          if (t.length > childBody.length && t.length > 5) childBody = t;
+        });
+        if (!childBody) continue;
+
+        // 子の投稿時刻
+        const childTimeEl = a.querySelector('time');
+        const childPublishedAt = childTimeEl?.getAttribute('datetime') ?? null;
+
+        tree_children.push({
+          threads_post_id: childPostId,
+          source_url: `https://www.threads.com/@${account_handle}/post/${childPostId}`,
+          body: childBody.slice(0, 4000),
+          published_at: childPublishedAt,
+        });
+      }
+    }
+
+    // 重複排除（同じ post_id を2回拾ったら1回に）
+    const dedupChildren = [];
+    const seenIds = new Set();
+    for (const c of tree_children) {
+      if (seenIds.has(c.threads_post_id)) continue;
+      seenIds.add(c.threads_post_id);
+      dedupChildren.push(c);
+    }
 
     return {
       body,
@@ -181,6 +240,7 @@ async function scrape(page, url) {
       reposts_count,
       views_count,
       published_at,
+      tree_children: dedupChildren,
       _debug_labels: debugLabels.slice(0, 15),
       _debug_spans: debugSpans.slice(0, 20),
     };
@@ -214,7 +274,7 @@ async function main() {
       const data = await scrape(page, item.source_url);
       console.log(`  ✅ body: ${(data.body ?? '').slice(0, 60)}...`);
       console.log(
-        `     metrics: views=${data.views_count} likes=${data.likes_count} replies=${data.replies_count} reposts=${data.reposts_count}`
+        `     metrics: views=${data.views_count} likes=${data.likes_count} replies=${data.replies_count} reposts=${data.reposts_count} tree_children=${data.tree_children?.length ?? 0}`
       );
       if (data._debug_spans?.length) {
         console.log(`     debug spans: ${data._debug_spans.slice(0, 12).join(' | ')}`);

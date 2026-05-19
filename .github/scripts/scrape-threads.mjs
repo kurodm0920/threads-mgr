@@ -169,6 +169,24 @@ async function scrape(page, url) {
       }
     }
 
+    // 画像 / 動画の有無検出
+    // プロフィール画像（150x150 + "プロフィール写真" alt）を除外、それ以外を投稿画像と判定
+    let image_count = 0;
+    let has_video = false;
+    if (article) {
+      article.querySelectorAll('img').forEach((img) => {
+        const alt = img.getAttribute('alt') ?? '';
+        if (/プロフィール写真|profile picture/i.test(alt)) return;
+        const w = img.naturalWidth || img.width || 0;
+        const h = img.naturalHeight || img.height || 0;
+        // 150x150 はプロフィール画像のサイズ、それより小さいアイコン類も除外
+        if (w <= 150 && h <= 150) return;
+        image_count++;
+      });
+      has_video = article.querySelectorAll('video').length > 0;
+    }
+    const has_image = image_count > 0;
+
     // 投稿時刻
     const timeEl = article?.querySelector('time') ?? document.querySelector('time');
     const published_at = timeEl?.getAttribute('datetime') ?? null;
@@ -224,11 +242,26 @@ async function scrape(page, url) {
         });
         if (!childBody) continue;
 
+        // 子の画像/動画
+        let childImageCount = 0;
+        let childHasVideo = false;
+        a.querySelectorAll('img').forEach((img) => {
+          const alt = img.getAttribute('alt') ?? '';
+          if (/プロフィール写真|profile picture/i.test(alt)) return;
+          const w = img.naturalWidth || img.width || 0;
+          const h = img.naturalHeight || img.height || 0;
+          if (w <= 150 && h <= 150) return;
+          childImageCount++;
+        });
+        childHasVideo = a.querySelectorAll('video').length > 0;
+
         tree_children.push({
           threads_post_id: childPostId,
           source_url: `https://www.threads.com/@${account_handle}/post/${childPostId}`,
           body: childBody.slice(0, 4000),
           published_at: childPublishedAt,
+          image_count: childImageCount,
+          has_video: childHasVideo,
         });
       }
     }
@@ -250,6 +283,9 @@ async function scrape(page, url) {
       reposts_count,
       views_count,
       published_at,
+      image_count,
+      has_image,
+      has_video,
       tree_children: dedupChildren,
       _debug_labels: debugLabels.slice(0, 15),
       _debug_spans: debugSpans.slice(0, 20),
@@ -288,7 +324,7 @@ async function main() {
         const data = await scrape(page, item.source_url);
         console.log(`  ✅ body: ${(data.body ?? '').slice(0, 60)}...`);
         console.log(
-          `     metrics: views=${data.views_count} likes=${data.likes_count} replies=${data.replies_count} reposts=${data.reposts_count} tree_children=${data.tree_children?.length ?? 0}`
+          `     metrics: views=${data.views_count} likes=${data.likes_count} replies=${data.replies_count} reposts=${data.reposts_count} img=${data.image_count} vid=${data.has_video ? 'yes' : 'no'} tree=${data.tree_children?.length ?? 0}`
         );
         if (data._debug_spans?.length) {
           console.log(`     debug spans: ${data._debug_spans.slice(0, 12).join(' | ')}`);

@@ -17,6 +17,8 @@ const TreeChildSchema = z.object({
   source_url: z.string().url(),
   body: z.string().min(1),
   published_at: z.string().datetime().optional().nullable(),
+  image_count: z.number().int().nonnegative().optional(),
+  has_video: z.boolean().optional(),
 });
 
 const SuccessSchema = z.object({
@@ -28,6 +30,9 @@ const SuccessSchema = z.object({
   reposts_count: z.number().int().nonnegative().optional().nullable(),
   views_count: z.number().int().nonnegative().optional().nullable(),
   published_at: z.string().datetime().optional().nullable(),
+  image_count: z.number().int().nonnegative().optional(),
+  has_image: z.boolean().optional(),
+  has_video: z.boolean().optional(),
   tree_children: z.array(TreeChildSchema).optional(),
 });
 
@@ -88,6 +93,9 @@ export async function PATCH(
         reposts_count: parsed.reposts_count ?? null,
         views_count: parsed.views_count ?? null,
         published_at: parsed.published_at ?? null,
+        image_count: parsed.image_count ?? null,
+        has_image: parsed.has_image ?? null,
+        has_video: parsed.has_video ?? null,
         scrape_error: null,
         ...(children.length > 0
           ? { tree_id: parentTreeId, tree_position: 1 }
@@ -138,6 +146,9 @@ export async function PATCH(
           account_handle: parsed.account_handle ?? null,
           body: c.body,
           published_at: c.published_at ?? null,
+          image_count: c.image_count ?? null,
+          has_image: c.image_count != null ? c.image_count > 0 : null,
+          has_video: c.has_video ?? null,
           tree_id: parentTreeId,
           tree_position: i + 2,
           scrape_status: 'completed',

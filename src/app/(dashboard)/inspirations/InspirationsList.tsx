@@ -21,6 +21,9 @@ interface Inspiration {
   keyword_matched: string | null;
   search_rank: number | null;
   discovered_at: string | null;
+  image_count: number | null;
+  has_image: boolean | null;
+  has_video: boolean | null;
 }
 
 function engagementRate(row: Inspiration): number | null {
@@ -273,6 +276,12 @@ function MetricsExtra({ row }: { row: Inspiration }) {
           🔥 {(rate * 100).toFixed(1)}%
         </span>
       )}
+      {row.has_image && (
+        <span className="text-zinc-500" title={`画像${row.image_count ?? '?'}枚`}>
+          📷{row.image_count && row.image_count > 1 ? row.image_count : ''}
+        </span>
+      )}
+      {row.has_video && <span className="text-zinc-500" title="動画あり">🎬</span>}
       {isBuzz && isFresh && (
         <span className="px-1.5 rounded bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300">
           バズ

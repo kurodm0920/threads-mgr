@@ -11,6 +11,7 @@ export interface BuzzImage {
 export const BUZZ_IMAGES: BuzzImage[] = [
   { filename: 'moon-ocean.png', theme: 'moon' },
   { filename: 'shrine-morning-light.png', theme: 'shrine' },
+  { filename: 'torii-sunset.png', theme: 'shrine' },
   { filename: 'golden-buddha.png', theme: 'sacred' },
   { filename: 'dragon-cloud.png', theme: 'sky' },
 ];

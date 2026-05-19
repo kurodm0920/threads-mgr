@@ -45,9 +45,10 @@
 
 ### 画像つき投稿の運用
 - バズ分析結果（2026-05-19）で「バズ投稿の60%は画像付き」と判明
-- `public/buzz-images/` に幸運系画像を常備（ChatGPT 生成、現在4枚）:
+- `public/buzz-images/` に幸運系画像を常備（ChatGPT 生成、現在5枚）:
   - `moon-ocean.png` — 海上の満月
   - `shrine-morning-light.png` — 朝光が差す神社
+  - `torii-sunset.png` — 海に浮かぶ鳥居と夕焼け
   - `golden-buddha.png` — 金の仏像
   - `dragon-cloud.png` — 龍雲
 - `/generate-week` で週35投稿のうち **5〜7投稿は画像つき** で生成（ランダム選択）

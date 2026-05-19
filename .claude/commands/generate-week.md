@@ -67,9 +67,10 @@ curl -s -H "Authorization: Bearer $CC_API_KEY" \
 **画像つき投稿**（必須）:
 - 35投稿中 **5〜7投稿** を画像つきにする（バズ分析で画像有率60%が判明）
 - 画像プールから **ランダム1枚** を選び、`media_urls: ["<URL>"]` として登録
-- 利用可能な画像（`public/buzz-images/`、計4枚）:
+- 利用可能な画像（`public/buzz-images/`、計5枚）:
   - `moon-ocean.png` — 海上の満月、月光が水面に反射（テーマ: moon）
   - `shrine-morning-light.png` — 朝光が差し込む神社の参道（テーマ: shrine）
+  - `torii-sunset.png` — 海に浮かぶ朱色の鳥居と夕焼け（テーマ: shrine）
   - `golden-buddha.png` — 金の仏像、神聖な祭壇（テーマ: sacred）
   - `dragon-cloud.png` — 空に浮かぶ龍のような雲（テーマ: sky）
 - URL 形式: `https://threads-mgr.vercel.app/buzz-images/<filename>`

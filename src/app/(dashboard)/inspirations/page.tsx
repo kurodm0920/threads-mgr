@@ -57,7 +57,10 @@ export default async function InspirationsPage({
   if (tab === 'manual') {
     query = query.eq('source', 'manual');
   } else if (tab === 'trend') {
-    query = query.eq('source', 'keyword_trend');
+    // トレンドタブは「親」のみ表示（連投検出で追加された子は裏に隠す）
+    query = query
+      .eq('source', 'keyword_trend')
+      .or('tree_id.is.null,tree_position.eq.1');
   }
 
   const { data: rawRows } = await query;
@@ -66,22 +69,25 @@ export default async function InspirationsPage({
   // トレンドタブはサーバー側でバズ判定（30日以内 + engagement >= 5%）でフィルタ
   const rows = tab === 'trend' ? allRows.filter(isBuzzWithinFreshness) : allRows;
 
+  // 件数集計（トレンドタブは親のみカウント）
+  const trendParentCount = await supabase
+    .from('inspirations')
+    .select('id', { count: 'exact', head: true })
+    .eq('source', 'keyword_trend')
+    .or('tree_id.is.null,tree_position.eq.1');
+
   const counts = await Promise.all([
     supabase
       .from('inspirations')
       .select('id', { count: 'exact', head: true })
       .eq('source', 'manual'),
-    supabase
-      .from('inspirations')
-      .select('id', { count: 'exact', head: true })
-      .eq('source', 'keyword_trend'),
     supabase.from('inspirations').select('id', { count: 'exact', head: true }),
   ]);
 
   const tabCounts: Record<Tab, number> = {
     manual: counts[0].count ?? 0,
-    trend: counts[1].count ?? 0,
-    all: counts[2].count ?? 0,
+    trend: trendParentCount.count ?? 0,
+    all: counts[1].count ?? 0,
   };
 
   return (

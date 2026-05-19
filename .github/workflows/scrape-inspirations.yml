@@ -37,3 +37,12 @@ jobs:
         env:
           VERCEL_URL: ${{ secrets.VERCEL_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+      - name: Upload failure screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scrape-failures-${{ github.run_id }}
+          path: screenshots/
+          retention-days: 7
+          if-no-files-found: ignore

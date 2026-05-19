@@ -3,6 +3,8 @@
 // → 既存の scrape-threads.mjs が pending を順に拾って本文・メトリクスを取得
 
 import { chromium } from 'playwright';
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   createStealthContext,
   gateInterval,
@@ -10,6 +12,9 @@ import {
   humanScroll,
   jitter,
 } from './lib/stealth.mjs';
+
+const SCREENSHOT_DIR = 'screenshots';
+mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
 const VERCEL_URL = process.env.VERCEL_URL;
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -103,7 +108,9 @@ async function main() {
   let succeeded = 0;
   let failed = 0;
 
-  for (const { keyword } of KEYWORDS) {
+  for (let i = 0; i < KEYWORDS.length; i++) {
+    const { keyword } = KEYWORDS[i];
+    const slug = String(i + 1).padStart(2, '0');
     try {
       const url = buildSearchUrl(keyword);
       console.log(`→ [${keyword}] ${url}`);
@@ -113,12 +120,24 @@ async function main() {
 
       const rows = await extractPostUrls(page, keyword);
       console.log(`  found ${rows.length} URLs`);
+      await page
+        .screenshot({
+          path: join(SCREENSHOT_DIR, `discover-${slug}-${rows.length}items.png`),
+          fullPage: false,
+        })
+        .catch(() => {});
       allRows.push(...rows);
       succeeded++;
       await jitter(5000, 10000);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`  ❌ [${keyword}] ${msg}`);
+      await page
+        .screenshot({
+          path: join(SCREENSHOT_DIR, `discover-${slug}-FAILED.png`),
+          fullPage: false,
+        })
+        .catch(() => {});
       failed++;
     }
   }

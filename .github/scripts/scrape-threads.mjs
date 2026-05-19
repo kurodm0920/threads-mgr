@@ -1,4 +1,6 @@
 import { chromium } from 'playwright';
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   createStealthContext,
   gateInterval,
@@ -6,6 +8,9 @@ import {
   humanScroll,
   jitter,
 } from './lib/stealth.mjs';
+
+const SCREENSHOT_DIR = 'screenshots';
+mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
 const VERCEL_URL = process.env.VERCEL_URL;
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -208,6 +213,12 @@ async function main() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.log(`  ❌ ${msg}`);
+      await page
+        .screenshot({
+          path: join(SCREENSHOT_DIR, `scrape-FAILED-${item.id}.png`),
+          fullPage: false,
+        })
+        .catch(() => {});
       await patchResult(item.id, { success: false, error: msg });
       failed++;
     } finally {

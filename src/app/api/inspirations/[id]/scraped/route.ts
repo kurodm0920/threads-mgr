@@ -69,8 +69,11 @@ export async function PATCH(
       .eq('id', id)
       .maybeSingle();
 
-    // 連投が検出されたら親の tree_id を確保
-    const children = parsed.tree_children ?? [];
+    // 連投自動検出は keyword_trend / auto_search のみ。
+    // manual はゆやさんが意図して登録した URL なので、隣接記事を勝手にツリー化しない。
+    const allowTreeExpansion =
+      parentRow?.source === 'keyword_trend' || parentRow?.source === 'auto_search';
+    const children = allowTreeExpansion ? (parsed.tree_children ?? []) : [];
     const parentTreeId =
       children.length > 0 ? (parentRow?.tree_id ?? randomUUID()) : (parentRow?.tree_id ?? null);
 

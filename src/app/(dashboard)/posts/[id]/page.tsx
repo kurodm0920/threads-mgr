@@ -34,14 +34,54 @@ export default async function PostDetailPage({
     .eq('post_id', id)
     .order('bucket', { ascending: true });
 
+  // 前後の投稿（scheduled_at 順）
+  const [{ data: prev }, { data: next }] = await Promise.all([
+    supabase
+      .from('scheduled_posts')
+      .select('id, scheduled_at')
+      .lt('scheduled_at', scheduled.scheduled_at)
+      .order('scheduled_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('scheduled_posts')
+      .select('id, scheduled_at')
+      .gt('scheduled_at', scheduled.scheduled_at)
+      .order('scheduled_at', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  const navLinks = (
+    <div className="flex items-center gap-4 text-sm">
+      {prev ? (
+        <Link href={`/posts/${prev.id}`} className="text-blue-500 hover:underline">
+          ← 前の投稿
+        </Link>
+      ) : (
+        <span className="text-zinc-400">← 前の投稿</span>
+      )}
+      {next ? (
+        <Link href={`/posts/${next.id}`} className="text-blue-500 hover:underline">
+          次の投稿 →
+        </Link>
+      ) : (
+        <span className="text-zinc-400">次の投稿 →</span>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      <Link
-        href="/calendar"
-        className="inline-block text-sm text-blue-500 hover:underline"
-      >
-        ← カレンダーに戻る
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          href="/calendar"
+          className="inline-block text-sm text-blue-500 hover:underline"
+        >
+          ← カレンダーに戻る
+        </Link>
+        {navLinks}
+      </div>
 
       <h1 className="text-2xl font-bold">投稿詳細</h1>
 
@@ -150,6 +190,10 @@ export default async function PostDetailPage({
           )}
         </section>
       )}
+
+      <div className="flex items-center justify-end pt-4 border-t border-zinc-200 dark:border-zinc-800">
+        {navLinks}
+      </div>
     </div>
   );
 }
